@@ -136,7 +136,7 @@ const TodoApp = () => {
 
         <VStack spacing={3} align="stretch">
           {filteredTodos.length === 0 ? (
-            <Text textAlign="center" py={4}>
+            <Text  display="flex"  alignItems={"center"} justifyContent={"center"} height="435px" textAlign="center"  py={4}>
               {searchTerm
                 ? "No matching todos found"
                 : "No todos yet. Add one!"}
