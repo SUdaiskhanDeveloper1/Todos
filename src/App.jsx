@@ -128,20 +128,37 @@ const TodoApp = () => {
   );
 
   return (
-    <Flex direction="column" minHeight="90vh" overflow="hidden" bg={bgColor}>
+    <Flex direction="column" minHeight="100vh" overflow="hidden" bg={bgColor}>
       <Box flex="1" maxW="800px" w="100%" mx="auto" px={4} py={4}>
-        <Flex justify="space-between" align="center" mb={6}>
-          <Heading as="h1" size="xl" textAlign={["center", "left"]}>
+        <Flex
+          justify="space-between"
+          align="center"
+          mb={6}
+          flexWrap="wrap"
+          gap={4}
+        >
+          <Heading
+            as="h1"
+            size="xl"
+            textAlign={{ base: "center", sm: "left" }}
+            w={{ base: "100%", sm: "auto" }}
+          >
             Tasks
           </Heading>
 
-          <Flex align="center" gap={5}>
-            <InputGroup w="110px">
+          <Flex
+            align="center"
+            gap={3}
+            w={{ base: "100%", sm: "auto" }}
+            justify={{ base: "center", sm: "flex-end" }}
+          >
+            <InputGroup w={{ base: "80%", sm: "200px" }}>
               <InputLeftElement pointerEvents="none">
                 <MdSearch color="gray" />
               </InputLeftElement>
               <Input
                 size="md"
+                borderRadius="2xl"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -157,13 +174,14 @@ const TodoApp = () => {
           </Flex>
         </Flex>
 
-        <VStack spacing={3} align="stretch" maxH="70vh" overflowY="auto" pr={2}>
+        <VStack spacing={3} align="stretch" h="60vh" overflowY="auto" pr={2}>
           {filteredTodos.length === 0 ? (
             <Text
               display="flex"
               alignItems={"center"}
               justifyContent={"center"}
-              minHeight="40vh"
+              minHeight="60vh"
+              // backgroundColor={"red"}
               textAlign="center"
               py={4}
             >
@@ -341,30 +359,6 @@ const TodoApp = () => {
 };
 
 export default TodoApp;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //   Another my tasks APP check both one you can also try this created by khan
 
