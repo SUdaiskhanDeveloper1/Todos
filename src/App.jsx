@@ -128,7 +128,7 @@ const TodoApp = () => {
   );
 
   return (
-    <Flex direction="column" minHeight="100vh" overflow="hidden" bg={bgColor}>
+    <Flex direction="column" minHeight="90vh" overflow="hidden" bg={bgColor}>
       <Box flex="1" maxW="800px" w="100%" mx="auto" px={4} py={4}>
         <Flex
           justify="space-between"
