@@ -138,7 +138,6 @@ const TodoApp = () => {
               />
             </InputGroup>
 
-            {/* Dark/Light toggle */}
             <IconButton
               size="md"
               onClick={toggleColorMode}
@@ -148,7 +147,7 @@ const TodoApp = () => {
           </Flex>
         </Flex>
 
-        {/* Scrollable Todos Section */}
+       
         <VStack
           spacing={3}
           align="stretch"
@@ -259,7 +258,7 @@ const TodoApp = () => {
         </VStack>
       </Box>
 
-      {/* Add Todo Section */}
+     
       <Box
         borderTop="1px solid"
         borderColor="gray.200"
