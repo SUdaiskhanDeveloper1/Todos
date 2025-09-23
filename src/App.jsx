@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -18,11 +16,22 @@ import {
   InputLeftElement,
   useColorMode,
   useColorModeValue,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from "@chakra-ui/react";
-import { StarIcon, EditIcon, DeleteIcon, AddIcon, SunIcon, MoonIcon } from "@chakra-ui/icons";
-import { MdSearch } from "react-icons/md";
-import './App.css';
-import './index.css';
+import {
+  StarIcon,
+  EditIcon,
+  DeleteIcon,
+  AddIcon,
+  SunIcon,
+  MoonIcon,
+} from "@chakra-ui/icons";
+import { MdSearch, MdMoreVert } from "react-icons/md";
+import "./App.css";
+import "./index.css";
 
 const TodoApp = () => {
   const [todos, setTodos] = useState([]);
@@ -125,14 +134,14 @@ const TodoApp = () => {
             Tasks
           </Heading>
 
-          <Flex align="center" gap={4}>
-            <InputGroup w="200px">
+          <Flex align="center" gap={5}>
+            <InputGroup w="110px">
               <InputLeftElement pointerEvents="none">
                 <MdSearch color="gray" />
               </InputLeftElement>
               <Input
                 size="md"
-                placeholder="Search todos..."
+                placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -147,14 +156,7 @@ const TodoApp = () => {
           </Flex>
         </Flex>
 
-       
-        <VStack
-          spacing={3}
-          align="stretch"
-          maxH="70vh"
-          overflowY="auto"
-          pr={2}
-        >
+        <VStack spacing={3} align="stretch" maxH="70vh" overflowY="auto" pr={2}>
           {filteredTodos.length === 0 ? (
             <Text
               display="flex"
@@ -218,7 +220,9 @@ const TodoApp = () => {
                           {todo.text}
                         </Text>
                       </HStack>
-                      <HStack spacing={2}>
+
+                   
+                      <HStack spacing={2} display={{ base: "none", md: "flex" }}>
                         <IconButton
                           size="md"
                           colorScheme="blue"
@@ -249,6 +253,40 @@ const TodoApp = () => {
                           </Badge>
                         )}
                       </HStack>
+
+                    
+                      <Menu>
+                        <MenuButton
+                          as={IconButton}
+                          icon={<MdMoreVert />}
+                          variant="outline"
+                          display={{ base: "flex", md: "none" }}
+                          aria-label="Options"
+                        />
+                        <MenuList>
+                          <MenuItem
+                            icon={<EditIcon />}
+                            onClick={() => startEditing(todo.id, todo.text)}
+                          >
+                            Edit
+                          </MenuItem>
+                          <MenuItem
+                            icon={<DeleteIcon />}
+                            onClick={() => deleteTodo(todo.id)}
+                          >
+                            Delete
+                          </MenuItem>
+                          <MenuItem
+                            icon={<StarIcon />}
+                            onClick={() => toggleBookmark(todo.id)}
+                          >
+                            {todo.bookmarked ? "Remove Bookmark" : "Add Bookmark"}
+                          </MenuItem>
+                          {todo.edited && (
+                            <MenuItem isDisabled>Edited</MenuItem>
+                          )}
+                        </MenuList>
+                      </Menu>
                     </>
                   )}
                 </Flex>
@@ -258,7 +296,6 @@ const TodoApp = () => {
         </VStack>
       </Box>
 
-     
       <Box
         borderTop="1px solid"
         borderColor="gray.200"
@@ -307,6 +344,7 @@ const TodoApp = () => {
 };
 
 export default TodoApp;
+
 
 
 
