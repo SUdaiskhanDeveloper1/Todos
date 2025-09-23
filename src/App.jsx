@@ -14,6 +14,7 @@ import {
   Badge,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   useColorMode,
   useColorModeValue,
   Menu,
@@ -127,7 +128,7 @@ const TodoApp = () => {
   );
 
   return (
-    <Flex direction="column" minHeight="90vh" overflow="hidden" bg={bgColor}>
+    <Flex direction="column" minHeight="96vh" overflow="hidden" bg={bgColor}>
       <Box flex="1" maxW="800px" w="100%" mx="auto" px={4} py={4}>
         <Flex justify="space-between" align="center" mb={6}>
           <Heading as="h1" size="xl" textAlign={["center", "left"]}>
@@ -221,8 +222,10 @@ const TodoApp = () => {
                         </Text>
                       </HStack>
 
-                   
-                      <HStack spacing={2} display={{ base: "none", md: "flex" }}>
+                      <HStack
+                        spacing={2}
+                        display={{ base: "none", md: "flex" }}
+                      >
                         <IconButton
                           size="md"
                           colorScheme="blue"
@@ -254,7 +257,6 @@ const TodoApp = () => {
                         )}
                       </HStack>
 
-                    
                       <Menu>
                         <MenuButton
                           as={IconButton}
@@ -280,7 +282,9 @@ const TodoApp = () => {
                             icon={<StarIcon />}
                             onClick={() => toggleBookmark(todo.id)}
                           >
-                            {todo.bookmarked ? "Remove Bookmark" : "Add Bookmark"}
+                            {todo.bookmarked
+                              ? "Remove Bookmark"
+                              : "Add Bookmark"}
                           </MenuItem>
                           {todo.edited && (
                             <MenuItem isDisabled>Edited</MenuItem>
@@ -313,30 +317,23 @@ const TodoApp = () => {
           px={4}
           py={4}
         >
-          <HStack
-            spacing={2}
-            w="100%"
-            flexDir={{ base: "column", sm: "row" }}
-            align="stretch"
-          >
+          <InputGroup size="lg">
             <Input
-              size="lg"
               placeholder="Add a new todo..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && addTodo()}
-              w="100%"
             />
-            <IconButton
-              size="lg"
-              colorScheme="teal"
-              icon={<AddIcon />}
-              onClick={addTodo}
-              aria-label="Add todo"
-              w={{ base: "100%", sm: "auto" }}
-              mt={{ base: 2, sm: 0 }}
-            />
-          </HStack>
+            <InputRightElement>
+              <IconButton
+                size="sm"
+                colorScheme="teal"
+                icon={<AddIcon />}
+                onClick={addTodo}
+                aria-label="Add todo"
+              />
+            </InputRightElement>
+          </InputGroup>
         </VStack>
       </Box>
     </Flex>
@@ -370,11 +367,6 @@ export default TodoApp;
 
 
 //   Another my tasks APP check both one you can also try this created by khan
-
-
-
-
-
 
 // import React, { useState, useEffect } from "react";
 // import {
@@ -605,31 +597,3 @@ export default TodoApp;
 // };
 
 // export default TodoApp;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
