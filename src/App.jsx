@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -17,9 +16,13 @@ import {
   Badge,
   InputGroup,
   InputLeftElement,
+  useColorMode,
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { StarIcon, EditIcon, DeleteIcon, AddIcon } from "@chakra-ui/icons";
-import { MdAssignment, MdNotifications, MdSearch } from "react-icons/md";
+import { StarIcon, EditIcon, DeleteIcon, AddIcon, SunIcon, MoonIcon } from "@chakra-ui/icons";
+import { MdSearch } from "react-icons/md";
+import './App.css';
+import './index.css';
 
 const TodoApp = () => {
   const [todos, setTodos] = useState([]);
@@ -28,6 +31,9 @@ const TodoApp = () => {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
   const toast = useToast();
+  const { colorMode, toggleColorMode } = useColorMode();
+  const bgColor = useColorModeValue("white", "gray.800");
+  const todoBg = useColorModeValue("white", "gray.700");
 
   useEffect(() => {
     const savedTodos = localStorage.getItem("todos");
@@ -89,7 +95,7 @@ const TodoApp = () => {
 
     setTimeout(() => {
       setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
-    }, 1000);
+    }, 200);
   };
 
   const startEditing = (id, text) => {
@@ -112,15 +118,15 @@ const TodoApp = () => {
   );
 
   return (
-    <Flex direction="column" minHeight="100vh">
+    <Flex direction="column" minHeight="100vh" overflow="hidden" bg={bgColor}>
       <Box flex="1" maxW="800px" w="100%" mx="auto" px={4} py={4}>
         <Flex justify="space-between" align="center" mb={6}>
           <Heading as="h1" size="xl" textAlign={["center", "left"]}>
             Tasks
           </Heading>
 
-          <Flex align="right" gap={4}>
-            <InputGroup w="250px">
+          <Flex align="center" gap={4}>
+            <InputGroup w="200px">
               <InputLeftElement pointerEvents="none">
                 <MdSearch color="gray" />
               </InputLeftElement>
@@ -131,12 +137,34 @@ const TodoApp = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </InputGroup>
+
+            {/* Dark/Light toggle */}
+            <IconButton
+              size="md"
+              onClick={toggleColorMode}
+              icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+              aria-label="Toggle dark mode"
+            />
           </Flex>
         </Flex>
 
-        <VStack spacing={3} align="stretch">
+        {/* Scrollable Todos Section */}
+        <VStack
+          spacing={3}
+          align="stretch"
+          maxH="70vh"
+          overflowY="auto"
+          pr={2}
+        >
           {filteredTodos.length === 0 ? (
-            <Text  display="flex"  alignItems={"center"} justifyContent={"center"} height="435px" textAlign="center"  py={4}>
+            <Text
+              display="flex"
+              alignItems={"center"}
+              justifyContent={"center"}
+              minHeight="40vh"
+              textAlign="center"
+              py={4}
+            >
               {searchTerm
                 ? "No matching todos found"
                 : "No todos yet. Add one!"}
@@ -150,7 +178,7 @@ const TodoApp = () => {
                 borderRadius="md"
                 opacity={todo.deleting ? 0.6 : 1}
                 transition="opacity 0.3s"
-                bg={todo.bookmarked ? "yellow.50" : "white"}
+                bg={todo.bookmarked ? "yellow.100" : todoBg}
               >
                 <Flex justifyContent="space-between" alignItems="center">
                   {editingId === todo.id ? (
@@ -177,8 +205,6 @@ const TodoApp = () => {
                   ) : (
                     <>
                       <HStack flex={1} alignItems="center" spacing={3}>
-                       
-                        {/* <MdAssignment size={20} color="gray" /> */}
                         <Checkbox
                           isChecked={todo.completed}
                           onChange={() => toggleTodo(todo.id)}
@@ -233,11 +259,11 @@ const TodoApp = () => {
         </VStack>
       </Box>
 
-      
+      {/* Add Todo Section */}
       <Box
         borderTop="1px solid"
         borderColor="gray.200"
-        bg="white"
+        bg={bgColor}
         position="sticky"
         bottom="0"
         width="100%"
@@ -282,12 +308,6 @@ const TodoApp = () => {
 };
 
 export default TodoApp;
-
-
-
-
-
-
 
 
 
