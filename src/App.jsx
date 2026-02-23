@@ -1,54 +1,69 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Heading,
-  Input,
-  Button,
-  Checkbox,
-  HStack,
-  VStack,
   Flex,
+  Heading,
+  VStack,
   Text,
   useToast,
+  useColorMode,
   IconButton,
-  Badge,
+  Button,
   InputGroup,
   InputLeftElement,
-  InputRightElement,
-  useColorMode,
+  Input,
   useColorModeValue,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
+  Container,
 } from "@chakra-ui/react";
 import {
-  StarIcon,
-  EditIcon,
-  DeleteIcon,
-  AddIcon,
   SunIcon,
   MoonIcon,
+  SearchIcon,
+  DeleteIcon,
 } from "@chakra-ui/icons";
-import { MdSearch, MdMoreVert } from "react-icons/md";
+import {
+  AnimatePresence
+} from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+} from "@chakra-ui/react";
+import Sidebar from "./components/Sidebar";
+import TaskCard from "./components/TaskCard";
+import TaskInput from "./components/TaskInput";
 import "./App.css";
-import "./index.css";
 
-const TodoApp = () => {
+const App = () => {
   const [todos, setTodos] = useState([]);
-  const [inputValue, setInputValue] = useState("");
+  const [activeSection, setActiveSection] = useState("new task");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [todoToDelete, setTodoToDelete] = useState(null);
+  const cancelRef = React.useRef();
+
   const toast = useToast();
   const { colorMode, toggleColorMode } = useColorMode();
-  const bgColor = useColorModeValue("white", "gray.800");
-  const todoBg = useColorModeValue("white", "gray.700");
+  const bgColor = useColorModeValue("gray.50", "gray.900");
+  const mainContentBg = useColorModeValue("white", "gray.800");
 
   useEffect(() => {
     const savedTodos = localStorage.getItem("todos");
     if (savedTodos) {
-      setTodos(JSON.parse(savedTodos));
+      const parsed = JSON.parse(savedTodos);
+      const migrated = parsed.map(todo => ({
+        ...todo,
+        createdAt: todo.createdAt || new Date().toISOString(),
+        deleted: todo.deleted || false,
+        priority: todo.priority || "Medium"
+      }));
+      setTodos(migrated);
     }
   }, []);
 
@@ -56,28 +71,25 @@ const TodoApp = () => {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
 
-  const addTodo = () => {
-    if (inputValue.trim() === "") {
-      toast({
-        title: "Error",
-        description: "Todo cannot be empty",
-        status: "error",
-        duration: 2000,
-        isClosable: true,
-      });
-      return;
-    }
-
+  const addTodo = (text, priority) => {
     const newTodo = {
       id: Date.now(),
-      text: inputValue,
+      text,
       completed: false,
       bookmarked: false,
       edited: false,
+      priority,
+      createdAt: new Date().toISOString(),
+      deleted: false,
     };
-
     setTodos([newTodo, ...todos]);
-    setInputValue("");
+    toast({
+      title: "Task added",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+      position: "bottom-right",
+    });
   };
 
   const toggleTodo = (id) => {
@@ -97,15 +109,51 @@ const TodoApp = () => {
   };
 
   const deleteTodo = (id) => {
-    setTodos((prevTodos) =>
-      prevTodos.map((todo) =>
-        todo.id === id ? { ...todo, deleting: true } : todo
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, deleted: true } : todo
       )
     );
+    toast({
+      title: "Moved to Trash",
+      status: "info",
+      duration: 2000,
+      isClosable: true,
+      position: "bottom-right",
+    });
+  };
 
-    setTimeout(() => {
-      setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
-    }, 200);
+  const restoreTodo = (id) => {
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, deleted: false } : todo
+      )
+    );
+    toast({
+      title: "Task restored",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+      position: "bottom-right",
+    });
+  };
+
+  const confirmPermanentDelete = (id) => {
+    setTodoToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const permanentlyDeleteTodo = () => {
+    setTodos(todos.filter((todo) => todo.id !== todoToDelete));
+    setIsDeleteDialogOpen(false);
+    setTodoToDelete(null);
+    toast({
+      title: "Task permanently deleted",
+      status: "error",
+      duration: 2000,
+      isClosable: true,
+      position: "bottom-right",
+    });
   };
 
   const startEditing = (id, text) => {
@@ -123,242 +171,166 @@ const TodoApp = () => {
     setEditValue("");
   };
 
-  const filteredTodos = todos.filter((todo) =>
-    todo.text.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const counters = {
+    new: todos.filter(t => !t.deleted).length,
+    pending: todos.filter(t => !t.completed && !t.deleted).length,
+    completed: todos.filter(t => t.completed && !t.deleted).length,
+    bookmarked: todos.filter(t => t.bookmarked && !t.deleted).length,
+    trash: todos.filter(t => t.deleted).length,
+  };
+
+  const baseFilteredTodos = todos.filter((todo) => {
+    const matchesSearch = todo.text
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    switch (activeSection) {
+      case "pending":
+        return !todo.completed && !todo.deleted;
+      case "completed":
+        return todo.completed && !todo.deleted;
+      case "bookmarked":
+        return todo.bookmarked && !todo.deleted;
+      case "trash":
+        return todo.deleted;
+      case "new":
+        return !todo.deleted;
+      default:
+        return !todo.deleted;
+    }
+  });
+
+
+
+  const sortedTodos = [...baseFilteredTodos].sort((a, b) => {
+    if (a.deleted !== b.deleted) return a.deleted ? 1 : -1;
+    if (a.bookmarked !== b.bookmarked) return a.bookmarked ? -1 : 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  const sectionTitles = {
+    new: "All Tasks",
+    pending: "Pending Tasks",
+    completed: "Completed Tasks",
+    bookmarked: "Bookmarked Tasks",
+    trash: "Deleted Tasks",
+  };
 
   return (
-    <Flex direction="column" minHeight="90vh" overflow="hidden" bg={bgColor}>
-      <Box flex="1" maxW="800px" w="100%" mx="auto" px={4} py={4}>
-        <Flex
-          justify="space-between"
-          align="center"
-          mb={6}
-          flexWrap="wrap"
-          gap={4}
-        >
-          <Heading
-            as="h1"
-            size="xl"
-            textAlign={{ base: "center", sm: "left" }}
-            w={{ base: "100%", sm: "auto" }}
-          >
-            Tasks
-          </Heading>
+    <Flex minH="100vh" bg={bgColor} direction={{ base: "column", md: "row" }} overflow="hidden">
+      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} counters={counters} />
 
-          <Flex
-            align="center"
-            gap={3}
-            w={{ base: "100%", sm: "auto" }}
-            justify={{ base: "center", sm: "flex-end" }}
-          >
-            <InputGroup w={{ base: "80%", sm: "200px" }}>
-              <InputLeftElement pointerEvents="none">
-                <MdSearch color="gray" />
-              </InputLeftElement>
-              <Input
-                size="md"
-                borderRadius="2xl"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </InputGroup>
-
-            <IconButton
-              size="md"
-              onClick={toggleColorMode}
-              icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
-              aria-label="Toggle dark mode"
-            />
-          </Flex>
-        </Flex>
-
-        <VStack spacing={3} align="stretch" h="60vh" overflowY="auto" pr={2}>
-          {filteredTodos.length === 0 ? (
-            <Text
-              display="flex"
-              alignItems={"center"}
-              justifyContent={"center"}
-              minHeight="60vh"
-              // backgroundColor={"red"}
-              textAlign="center"
-              py={4}
-            >
-              {searchTerm
-                ? "No matching todos found"
-                : "No todos yet. Add one!"}
-            </Text>
-          ) : (
-            filteredTodos.map((todo) => (
-              <Box
-                key={todo.id}
-                p={3}
-                borderWidth="1px"
-                borderRadius="md"
-                opacity={todo.deleting ? 0.6 : 1}
-                transition="opacity 0.3s"
-                bg={todo.bookmarked ? "yellow.100" : todoBg}
-              >
-                <Flex justifyContent="space-between" alignItems="center">
-                  {editingId === todo.id ? (
-                    <HStack flex={1}>
-                      <Input
-                        size="md"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyPress={(e) =>
-                          e.key === "Enter" && saveEdit(todo.id)
-                        }
-                      />
-                      <Button size="sm" onClick={() => saveEdit(todo.id)}>
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingId(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </HStack>
-                  ) : (
-                    <>
-                      <HStack flex={1} alignItems="center" spacing={3}>
-                        <Checkbox
-                          isChecked={todo.completed}
-                          onChange={() => toggleTodo(todo.id)}
-                          size="md"
-                          borderColor="gray.300"
-                        />
-                        <Text
-                          as={todo.completed ? "del" : "span"}
-                          color={todo.completed ? "gray.500" : "current"}
-                          fontSize="md"
-                        >
-                          {todo.text}
-                        </Text>
-                      </HStack>
-
-                      <HStack
-                        spacing={2}
-                        display={{ base: "none", md: "flex" }}
-                      >
-                        <IconButton
-                          size="md"
-                          colorScheme="blue"
-                          icon={<EditIcon />}
-                          onClick={() => startEditing(todo.id, todo.text)}
-                          aria-label="Edit"
-                        />
-                        <IconButton
-                          size="md"
-                          colorScheme="red"
-                          icon={<DeleteIcon />}
-                          onClick={() => deleteTodo(todo.id)}
-                          isLoading={todo.deleting}
-                          aria-label="Delete"
-                        />
-                        <IconButton
-                          size="md"
-                          colorScheme={todo.bookmarked ? "yellow" : "gray"}
-                          icon={<StarIcon />}
-                          onClick={() => toggleBookmark(todo.id)}
-                          aria-label={
-                            todo.bookmarked ? "Remove bookmark" : "Add bookmark"
-                          }
-                        />
-                        {todo.edited && (
-                          <Badge colorScheme="gray" fontSize="0.7em">
-                            edited
-                          </Badge>
-                        )}
-                      </HStack>
-
-                      <Menu>
-                        <MenuButton
-                          as={IconButton}
-                          icon={<MdMoreVert />}
-                          variant="outline"
-                          display={{ base: "flex", md: "none" }}
-                          aria-label="Options"
-                        />
-                        <MenuList>
-                          <MenuItem
-                            icon={<EditIcon />}
-                            onClick={() => startEditing(todo.id, todo.text)}
-                          >
-                            Edit
-                          </MenuItem>
-                          <MenuItem
-                            icon={<DeleteIcon />}
-                            onClick={() => deleteTodo(todo.id)}
-                          >
-                            Delete
-                          </MenuItem>
-                          <MenuItem
-                            icon={<StarIcon />}
-                            onClick={() => toggleBookmark(todo.id)}
-                          >
-                            {todo.bookmarked
-                              ? "Remove Bookmark"
-                              : "Add Bookmark"}
-                          </MenuItem>
-                          {todo.edited && (
-                            <MenuItem isDisabled>Edited</MenuItem>
-                          )}
-                        </MenuList>
-                      </Menu>
-                    </>
-                  )}
-                </Flex>
-              </Box>
-            ))
-          )}
-        </VStack>
-      </Box>
-
-      <Box
-        borderTop="1px solid"
-        borderColor="gray.200"
-        bg={bgColor}
-        position="sticky"
-        bottom="0"
-        width="100%"
-      >
-        <VStack
-          spacing={3}
-          align="stretch"
-          w="100%"
-          maxW="800px"
-          mx="auto"
-          px={4}
-          py={4}
-        >
-          <InputGroup size="lg">
-            <Input
-              placeholder="Add a new todo..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && addTodo()}
-            />
-            <InputRightElement>
+      <Box flex="1" h="100vh" overflowY="auto" p={{ base: 4, md: 8 }} position="relative">
+        <Container maxW="container.md" h="full" display="flex" flexDirection="column">
+          <Flex justify="space-between" align="center" mb={8} flexShrink={0}>
+            <Heading size="lg" fontWeight="bold">
+              {sectionTitles[activeSection]}
+            </Heading>
+            <Flex gap={4} align="center">
+              <InputGroup size="md" w={{ base: "150px", md: "250px" }}>
+                <InputLeftElement pointerEvents="none">
+                  <SearchIcon color="gray.400" />
+                </InputLeftElement>
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  borderRadius="full"
+                  bg={mainContentBg}
+                />
+              </InputGroup>
               <IconButton
-                size="sm"
-                colorScheme="teal"
-                icon={<AddIcon />}
-                onClick={addTodo}
-                aria-label="Add todo"
+                variant="ghost"
+                onClick={toggleColorMode}
+                icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
+                aria-label="Toggle dark mode"
+                borderRadius="full"
               />
-            </InputRightElement>
-          </InputGroup>
-        </VStack>
+            </Flex>
+          </Flex>
+
+          {activeSection === "new" && (
+            <Box mb={6} flexShrink={0}>
+              <TaskInput addTodo={addTodo} />
+            </Box>
+          )}
+
+          <Box flex="1" overflowY="auto" px={1} pb={10}>
+            <VStack align="stretch" spacing={3}>
+              <AnimatePresence mode="popLayout">
+                {sortedTodos.length === 0 ? (
+                  <Flex
+                    direction="column"
+                    align="center"
+                    justify="center"
+                    py={20}
+                    opacity={0.6}
+                  >
+                    <Text fontSize="lg" fontWeight="medium">
+                      {searchTerm ? "No matching tasks found" : "No tasks here"}
+                    </Text>
+                    <Text fontSize="sm">
+                      {activeSection === "trash" ? "Your trash is empty" : "Enjoy your free time!"}
+                    </Text>
+                  </Flex>
+                ) : (
+                  sortedTodos.map((todo) => (
+                    <TaskCard
+                      key={todo.id}
+                      todo={todo}
+                      toggleTodo={toggleTodo}
+                      toggleBookmark={toggleBookmark}
+                      deleteTodo={deleteTodo}
+                      startEditing={startEditing}
+                      editingId={editingId}
+                      editValue={editValue}
+                      setEditValue={setEditValue}
+                      saveEdit={saveEdit}
+                      setEditingId={setEditingId}
+                      restoreTodo={restoreTodo}
+                      permanentlyDeleteTodo={confirmPermanentDelete}
+                    />
+                  ))
+                )}
+              </AnimatePresence>
+            </VStack>
+          </Box>
+        </Container>
       </Box>
+
+      <AlertDialog
+        isOpen={isDeleteDialogOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsDeleteDialogOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent borderRadius="xl">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Task
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsDeleteDialogOpen(false)}>
+                No
+              </Button>
+              <Button colorScheme="red" onClick={permanentlyDeleteTodo} ml={3}>
+                Yes
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Flex>
   );
 };
 
-export default TodoApp;
+export default App;
 
 //   Another my tasks APP check both one you can also try this created by khan
 
